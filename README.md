@@ -1,63 +1,60 @@
-# 🤖 Telegram Downloader Bot
+# 📥 Telegram Multi Downloader Bot
 
-A powerful Telegram bot to download files from Google Drive, Terabox, and direct links. Supports batch downloads, thumbnail generation, and premium features.
+A powerful Telegram bot to download files from **Google Drive** and **Terabox** with queue management, thumbnail generation, and premium features.
 
 ## ✨ Features
 
-- 📥 Download from Google Drive, Terabox & Direct Links
+- 📥 Download from Google Drive & Terabox direct links
 - 📁 Auto-zip folder contents
-- 🖼️ Thumbnail generation for all file types
-- 📊 Real-time progress bar
-- 📋 Queue system for multiple links
-- 📝 Batch download from .txt files
-- 👥 Group & Topic support
-- 💎 Premium & Freemium tiers
+- 🖼️ Thumbnail generation for video/jpg/pdf/apk/mp3
+- 📊 Queue management with progress tracking
+- 📝 Support .txt file with multiple links
+- 👥 Works in Groups & Topics
+- 💎 Premium & Freemium system
 - 📢 Broadcast system
-- 📊 Detailed task summary
+- 📋 Detailed logging
 
 ## 🚀 Deploy on Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com)
 
 ### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `API_ID` | Telegram API ID |
-| `API_HASH` | Telegram API Hash |
-| `BOT_TOKEN` | Telegram Bot Token |
-| `MONGO_URL` | MongoDB Connection URL |
-| `START_PIC` | Start image URL |
-| `DEFAULT_THUMBNAIL` | Default thumbnail URL for PDFs |
+| `API_ID` | Telegram API ID from my.telegram.org |
+| `API_HASH` | Telegram API Hash from my.telegram.org |
+| `BOT_TOKEN` | Bot token from @BotFather |
+| `MONGO_URI` | MongoDB connection string |
+| `START_PIC` | Start picture URL |
+| `THUMBNAIL_URL` | Default thumbnail URL for PDFs |
 
-### Steps
+## 📋 Commands
 
-1. Fork this repository
-2. Create a new Web Service on Render
-3. Connect your GitHub repo
-4. Add environment variables
-5. Deploy!
+| Command | Description |
+|---------|-------------|
+| `/start` | Start the bot |
+| `/help` | Show help message |
+| `/setting` | User settings (Premium only) |
+| `/cancel` | Cancel ongoing task |
+| `/broadcast` | Broadcast message (Owner only) |
+| `/premium` | Add premium user (Owner only) |
+| `/removepremium` | Remove premium (Owner only) |
 
-## 📝 Commands
-
-- `/start` - Start the bot
-- `/help` - Get help and usage guide
-- `/settings` - Configure bot settings (Premium only)
-- `/broadcast` - Broadcast message (Owner only)
-- `/cancel` - Cancel ongoing task
-
-## 👑 Premium vs Freemium
+## 💎 Limits
 
 | Feature | Freemium | Premium |
 |---------|----------|---------|
 | Daily Tasks | 5 | Unlimited |
 | Max File Size | 200 MB | 4 GB |
 | Speed | Low | High |
-| /settings | ❌ | ✅ |
+| Settings | ❌ | ✅ |
 
-## 👤 Owner
+## 📝 License
 
-- Telegram: [@technicalserena](https://t.me/technicalserena)
-- Contact: [@Xioqui_xin](https://t.me/Xioqui_xin)
+MIT License - Feel free to modify and use!
 
-## 📜 License
+## 👨‍💻 Developer
 
-MIT License
+- [@technicalserena](https://t.me/technicalserena)
+- [@Xioqui_xin](https://t.me/Xioqui_xin)
