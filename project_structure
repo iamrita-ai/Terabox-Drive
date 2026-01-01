@@ -1,0 +1,30 @@
+TelegramDownloadBot/
+├── bot.py
+├── config.py
+├── requirements.txt
+├── Procfile
+├── render.yaml
+├── plugins/
+│   ├── __init__.py
+│   ├── start.py
+│   ├── help.py
+│   ├── settings.py
+│   ├── broadcast.py
+│   ├── cancel.py
+│   ├── download_handler.py
+│   ├── batch_handler.py
+│   └── callbacks.py
+├── helpers/
+│   ├── __init__.py
+│   ├── database.py
+│   ├── downloader.py
+│   ├── gdrive.py
+│   ├── terabox.py
+│   ├── thumbnail.py
+│   ├── progress.py
+│   ├── queue_manager.py
+│   ├── zipper.py
+│   └── utils.py
+└── web/
+    ├── __init__.py
+    └── server.py
