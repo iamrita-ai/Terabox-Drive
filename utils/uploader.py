@@ -7,7 +7,7 @@ from pyrogram import Client
 from pyrogram.types import Message
 from config import Config
 from utils.progress import Progress
-from utils.helpers import get_file_extension, get_file_type, get_readable_file_size
+from utils.helpers import get_readable_file_size
 from utils.thumbnail import ThumbnailGenerator
 
 logger = logging.getLogger(__name__)
@@ -18,14 +18,14 @@ class Uploader:
         self.thumbnail_gen = ThumbnailGenerator()
     
     async def get_video_info(self, file_path: str) -> Tuple[int, int, int]:
-        """Get video duration, width, height using ffprobe"""
+        """Get video duration, width, height"""
         try:
             cmd = [
                 'ffprobe', '-v', 'error',
                 '-select_streams', 'v:0',
-                '-show_entries', 'stream=width,height,duration',
+                '-show_entries', 'stream=width,height',
                 '-show_entries', 'format=duration',
-                '-of', 'csv=p=0:s=,',
+                '-of', 'json',
                 file_path
             ]
             
@@ -36,13 +36,16 @@ class Uploader:
             )
             
             stdout, _ = await process.communicate()
-            output = stdout.decode().strip()
             
-            if output:
-                parts = output.split(',')
-                width = int(float(parts[0])) if len(parts) > 0 and parts[0] else 0
-                height = int(float(parts[1])) if len(parts) > 1 and parts[1] else 0
-                duration = int(float(parts[2])) if len(parts) > 2 and parts[2] else 0
+            if stdout:
+                import json
+                data = json.loads(stdout.decode())
+                
+                duration = int(float(data.get('format', {}).get('duration', 0)))
+                streams = data.get('streams', [{}])
+                width = streams[0].get('width', 0) if streams else 0
+                height = streams[0].get('height', 0) if streams else 0
+                
                 return duration, width, height
             
             return 0, 0, 0
@@ -58,8 +61,7 @@ class Uploader:
             if audio and hasattr(audio, 'info') and hasattr(audio.info, 'length'):
                 return int(audio.info.length)
             return 0
-        except Exception as e:
-            logger.debug(f"Audio duration error: {e}")
+        except:
             return 0
     
     async def upload_file(
@@ -71,19 +73,17 @@ class Uploader:
         caption: str = None,
         reply_to_message_id: int = None,
         message_thread_id: int = None,
-        custom_thumbnail: str = None
+        custom_thumbnail: str = None,
+        file_type: str = "document"
     ) -> Tuple[bool, Optional[Message], Optional[str]]:
-        """Upload file to Telegram with progress"""
+        """Upload file to Telegram"""
         try:
             if not os.path.exists(file_path):
                 return False, None, "File not found"
             
             filename = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
-            extension = get_file_extension(filename)
-            file_type = get_file_type(extension)
             
-            # Generate caption if not provided
             if caption is None:
                 caption = f"📁 **{filename}**\n📊 Size: {get_readable_file_size(file_size)}"
             
@@ -106,13 +106,12 @@ class Uploader:
                             filename, current, total, speed, eta
                         )
                         await progress_message.edit_text(text)
-                except Exception as e:
-                    logger.debug(f"Upload progress error: {e}")
+                except:
+                    pass
             
-            # Upload based on file type
             sent_message = None
             
-            # Base upload kwargs
+            # Base kwargs
             upload_kwargs = {
                 'chat_id': chat_id,
                 'caption': caption,
@@ -125,8 +124,8 @@ class Uploader:
             if message_thread_id:
                 upload_kwargs['message_thread_id'] = message_thread_id
             
+            # Upload based on file type
             if file_type == "video":
-                # Get video info
                 duration, width, height = await self.get_video_info(file_path)
                 
                 sent_message = await client.send_video(
@@ -136,11 +135,10 @@ class Uploader:
                     duration=duration,
                     width=width,
                     height=height,
-                    supports_streaming=True
+                    supports_streaming=True  # Makes video playable!
                 )
             
             elif file_type == "audio":
-                # Get audio duration
                 duration = await self.get_audio_duration(file_path)
                 
                 sent_message = await client.send_audio(
@@ -151,8 +149,7 @@ class Uploader:
                 )
             
             elif file_type == "image":
-                # Send as photo if small enough, else as document
-                if file_size < 10 * 1024 * 1024:  # 10 MB
+                if file_size < 10 * 1024 * 1024:
                     sent_message = await client.send_photo(
                         **upload_kwargs,
                         photo=file_path
@@ -165,7 +162,6 @@ class Uploader:
                     )
             
             else:
-                # Send as document
                 sent_message = await client.send_document(
                     **upload_kwargs,
                     document=file_path,
@@ -198,9 +194,7 @@ class Uploader:
         """Send log to log channel"""
         try:
             status_emoji = "✅" if status == "success" else "❌"
-            
-            # Truncate long URLs
-            display_url = url[:100] + "..." if len(url) > 100 else url
+            display_url = url[:80] + "..." if len(url) > 80 else url
             
             log_text = f"""
 {status_emoji} **File {'Uploaded' if status == 'success' else 'Failed'}**
@@ -211,11 +205,8 @@ class Uploader:
 """
             
             if error:
-                log_text += f"❌ **Error:** `{error}`"
+                log_text += f"\n❌ **Error:** `{error[:100]}`"
             
-            await client.send_message(
-                Config.LOG_CHANNEL,
-                log_text
-            )
+            await client.send_message(Config.LOG_CHANNEL, log_text)
         except Exception as e:
             logger.error(f"Log send error: {e}")
