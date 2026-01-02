@@ -161,7 +161,7 @@ async def process_user_links(client: Client, message: Message, is_group: bool = 
             pass
     
     results = {
-        'total': len(supported_links),
+        'total': 0,
         'success': 0,
         'failed': 0,
         'file_types': {}
@@ -170,49 +170,73 @@ async def process_user_links(client: Client, message: Message, is_group: bool = 
     for i, link in enumerate(supported_links, 1):
         try:
             await status_msg.edit_text(
-                f"📥 **Processing {i}/{len(supported_links)}**\n\n"
+                f"📥 **Processing Link {i}/{len(supported_links)}**\n\n"
                 f"🔗 `{link[:50]}...`\n"
-                f"⏳ Downloading..."
+                f"⏳ Checking..."
             )
             
-            success, file_type = await download_and_upload_link(
-                client=client,
-                url=link,
-                user_id=user_id,
-                username=username,
-                chat_id=chat_id,
-                reply_to_id=message.id,
-                progress_message=status_msg
-            )
-            
-            if success:
-                results['success'] += 1
-                if file_type:
-                    results['file_types'][file_type] = results['file_types'].get(file_type, 0) + 1
+            # Check if Terabox folder
+            if is_terabox_link(link) and ('filelist' in link.lower() and 'path=' in link.lower()):
+                # Handle folder - download each file separately
+                folder_results = await process_terabox_folder(
+                    client=client,
+                    url=link,
+                    user_id=user_id,
+                    username=username,
+                    chat_id=chat_id,
+                    reply_to_id=message.id,
+                    progress_message=status_msg,
+                    is_premium=is_premium
+                )
                 
-                if not is_premium:
-                    try:
-                        await user_db.increment_usage(user_id)
-                    except:
-                        pass
+                results['total'] += folder_results['total']
+                results['success'] += folder_results['success']
+                results['failed'] += folder_results['failed']
+                
+                for ft, count in folder_results.get('file_types', {}).items():
+                    results['file_types'][ft] = results['file_types'].get(ft, 0) + count
             else:
-                results['failed'] += 1
+                # Single file
+                results['total'] += 1
+                
+                success, file_type = await download_and_upload_link(
+                    client=client,
+                    url=link,
+                    user_id=user_id,
+                    username=username,
+                    chat_id=chat_id,
+                    reply_to_id=message.id,
+                    progress_message=status_msg
+                )
+                
+                if success:
+                    results['success'] += 1
+                    if file_type:
+                        results['file_types'][file_type] = results['file_types'].get(file_type, 0) + 1
+                    
+                    if not is_premium:
+                        try:
+                            await user_db.increment_usage(user_id)
+                        except:
+                            pass
+                else:
+                    results['failed'] += 1
             
-            # Add delay between files to avoid flood
+            # Delay between links
             if i < len(supported_links):
                 await asyncio.sleep(Config.MESSAGE_DELAY)
         
         except Exception as e:
             logger.error(f"Error: {e}")
+            results['total'] += 1
             results['failed'] += 1
     
     await cleanup_user_dir(user_id)
     
-    # Send summary with inline button
+    # Send summary at the END with only owner contact button
     summary = generate_summary(results)
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("👨‍💻 Contact Owner", url=Config.OWNER_CONTACT)],
-        [InlineKeyboardButton("📢 Join Channel", url=Config.FORCE_SUB_LINK)]
+        [InlineKeyboardButton("👨‍💻 Contact Owner", url=Config.OWNER_CONTACT)]
     ])
     
     try:
@@ -225,6 +249,136 @@ async def process_user_links(client: Client, message: Message, is_group: bool = 
             await status_msg.unpin()
         except:
             pass
+
+
+async def process_terabox_folder(
+    client: Client,
+    url: str,
+    user_id: int,
+    username: str,
+    chat_id: int,
+    reply_to_id: int,
+    progress_message: Message,
+    is_premium: bool
+) -> dict:
+    """Process Terabox folder - download each file separately"""
+    results = {
+        'total': 0,
+        'success': 0,
+        'failed': 0,
+        'file_types': {}
+    }
+    
+    try:
+        # Get folder files
+        await progress_message.edit_text(
+            "📁 **Terabox Folder Detected**\n\n"
+            "⏳ Fetching file list..."
+        )
+        
+        files = await downloader.get_terabox_folder_files(url)
+        
+        if not files:
+            logger.info("No files found in folder, trying single download")
+            results['total'] = 1
+            results['failed'] = 1
+            return results
+        
+        logger.info(f"📁 Found {len(files)} files in folder")
+        results['total'] = len(files)
+        
+        await progress_message.edit_text(
+            f"📁 **Terabox Folder**\n\n"
+            f"📊 Found {len(files)} file(s)\n"
+            f"⏳ Starting downloads..."
+        )
+        
+        download_path = create_download_dir(user_id)
+        
+        for i, file_info in enumerate(files, 1):
+            try:
+                filename = file_info.get('filename', f'file_{i}')
+                
+                await progress_message.edit_text(
+                    f"📁 **Folder: {i}/{len(files)}**\n\n"
+                    f"📄 `{filename}`\n"
+                    f"⏳ Downloading..."
+                )
+                
+                # Download single file
+                success, file_path, error = await downloader.download_terabox_single_file(
+                    file_info, download_path, progress_message
+                )
+                
+                if not success or not file_path:
+                    logger.error(f"Failed to download: {filename} - {error}")
+                    results['failed'] += 1
+                    continue
+                
+                # Get file info
+                actual_filename = os.path.basename(file_path)
+                file_size = os.path.getsize(file_path)
+                extension = get_file_extension(actual_filename)
+                file_type = get_file_type(extension)
+                
+                # Check size limit
+                max_size, max_size_mb = await user_db.get_max_size(user_id)
+                if file_size > max_size:
+                    await cleanup_file(file_path)
+                    results['failed'] += 1
+                    continue
+                
+                # Upload
+                await progress_message.edit_text(
+                    f"📁 **Folder: {i}/{len(files)}**\n\n"
+                    f"📄 `{actual_filename}`\n"
+                    f"⬆️ Uploading..."
+                )
+                
+                caption = f"📁 **{actual_filename}**\n📊 Size: {get_readable_file_size(file_size)}"
+                
+                upload_success, sent_msg, upload_error = await uploader.upload_file(
+                    client=client,
+                    file_path=file_path,
+                    chat_id=chat_id,
+                    progress_message=progress_message,
+                    caption=caption,
+                    reply_to_message_id=reply_to_id,
+                    message_thread_id=None,
+                    custom_thumbnail=None,
+                    file_type=file_type
+                )
+                
+                await cleanup_file(file_path)
+                
+                if upload_success:
+                    results['success'] += 1
+                    results['file_types'][file_type] = results['file_types'].get(file_type, 0) + 1
+                    
+                    await uploader.send_log(client, user_id, username, url, actual_filename, "success")
+                    
+                    if not is_premium:
+                        try:
+                            await user_db.increment_usage(user_id)
+                        except:
+                            pass
+                else:
+                    results['failed'] += 1
+                    await uploader.send_log(client, user_id, username, url, actual_filename, "failed", upload_error)
+                
+                # Delay between files
+                await asyncio.sleep(Config.MESSAGE_DELAY)
+            
+            except Exception as e:
+                logger.error(f"Folder file error: {e}")
+                results['failed'] += 1
+        
+        await cleanup_user_dir(user_id)
+    
+    except Exception as e:
+        logger.error(f"Folder processing error: {e}")
+    
+    return results
 
 
 async def download_and_upload_link(
@@ -254,6 +408,11 @@ async def download_and_upload_link(
             logger.error(f"❌ Download failed: {error}")
             await progress_message.edit_text(f"❌ **Download Failed!**\n\n`{error}`")
             await uploader.send_log(client, user_id, username, url, "Unknown", "failed", error)
+            return False, None
+        
+        # Check for folder marker
+        if isinstance(file_path, str) and file_path.startswith("TERABOX_FOLDER:"):
+            # This shouldn't happen now, but handle it
             return False, None
         
         logger.info(f"✅ Downloaded: {file_path}")
@@ -304,10 +463,6 @@ async def download_and_upload_link(
             logger.info("✅ Upload success!")
             await progress_message.edit_text(f"✅ **Uploaded!**\n\n📁 `{filename}`")
             await uploader.send_log(client, user_id, username, url, filename, "success")
-            
-            # Add delay after successful upload
-            await asyncio.sleep(Config.MESSAGE_DELAY)
-            
             return True, file_type
         else:
             logger.error(f"❌ Upload failed: {error}")
