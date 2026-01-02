@@ -16,7 +16,6 @@ def get_file_extension(filename: str) -> str:
         return ''
     if '.' in filename:
         ext = '.' + filename.rsplit('.', 1)[-1].lower()
-        # Validate extension length
         if len(ext) <= 6:
             return ext
     return ''
@@ -28,30 +27,24 @@ def get_file_type(extension: str) -> str:
     
     ext = extension.lower()
     
-    # Video
     video_exts = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.mpeg', '.mpg', '.ts', '.vob']
     if ext in video_exts:
         return "video"
     
-    # Audio
     audio_exts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.opus', '.amr']
     if ext in audio_exts:
         return "audio"
     
-    # Image
     image_exts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.ico', '.svg']
     if ext in image_exts:
         return "image"
     
-    # PDF
     if ext == '.pdf':
         return "pdf"
     
-    # APK
     if ext == '.apk':
         return "apk"
     
-    # Archive
     archive_exts = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz']
     if ext in archive_exts:
         return "archive"
@@ -59,25 +52,21 @@ def get_file_type(extension: str) -> str:
     return "document"
 
 def sanitize_filename(filename: str) -> str:
-    """Sanitize filename to remove invalid characters"""
+    """Sanitize filename"""
     if not filename:
         return "downloaded_file"
     
-    # Decode URL encoding
     try:
         filename = unquote(filename)
     except:
         pass
     
-    # Remove invalid characters
     invalid_chars = '<>:"/\\|?*\x00\n\r\t'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
     
-    # Remove leading/trailing spaces and dots
     filename = filename.strip('. \t\n\r')
     
-    # Limit filename length but preserve extension
     if len(filename) > 200:
         name, ext = os.path.splitext(filename)
         filename = name[:200-len(ext)] + ext
@@ -123,6 +112,8 @@ def is_gdrive_link(url: str) -> bool:
     gdrive_patterns = [
         'drive.google.com',
         'docs.google.com',
+        'drive.usercontent.google.com',  # NEW
+        'storage.googleapis.com',  # NEW
     ]
     return any(pattern in url.lower() for pattern in gdrive_patterns)
 
@@ -145,7 +136,7 @@ def is_terabox_link(url: str) -> bool:
 
 def is_terabox_folder(url: str) -> bool:
     """Check if Terabox URL is a folder"""
-    return 'filelist' in url.lower() or 'path=' in url.lower()
+    return 'filelist' in url.lower() and 'path=' in url.lower()
 
 def is_direct_link(url: str) -> bool:
     """Check if URL is a direct download link"""
@@ -199,7 +190,7 @@ async def cleanup_file(file_path: str):
         logger.error(f"Cleanup error: {e}")
 
 async def cleanup_user_dir(user_id: int):
-    """Clean up user's download directory completely"""
+    """Clean up user's download directory"""
     try:
         user_dir = os.path.join(Config.DOWNLOAD_DIR, str(user_id))
         if os.path.exists(user_dir):
@@ -229,14 +220,25 @@ async def zip_folder(folder_path: str, output_path: str) -> str:
         raise
 
 def generate_summary(results: dict) -> str:
-    """Generate task summary"""
+    """Generate task summary with nice message"""
     total = results.get('total', 0)
     success = results.get('success', 0)
     failed = results.get('failed', 0)
     
     file_types = results.get('file_types', {})
     
+    # Nice completion message
+    if success == total and total > 0:
+        status_msg = "🎉 **All tasks completed successfully!**"
+    elif success > 0:
+        status_msg = "✨ **Tasks completed with some issues.**"
+    else:
+        status_msg = "😔 **All tasks failed.**"
+    
     summary = f"""
+{status_msg}
+
+━━━━━━━━━━━━━━━━━━━━━━
 📊 **Task Summary**
 ━━━━━━━━━━━━━━━━━━━━━━
 
@@ -244,10 +246,10 @@ def generate_summary(results: dict) -> str:
 ❌ **Failed:** {failed}
 📁 **Total:** {total}
 
-📋 **File Types:**
 """
     
     if file_types:
+        summary += "📋 **File Types:**\n"
         for ftype, count in file_types.items():
             emoji = {
                 'video': '🎬',
@@ -259,9 +261,12 @@ def generate_summary(results: dict) -> str:
                 'document': '📎'
             }.get(ftype, '📁')
             summary += f"{emoji} {ftype.title()}: {count}\n"
-    else:
-        summary += "None\n"
     
-    summary += "━━━━━━━━━━━━━━━━━━━━━━"
+    summary += """
+━━━━━━━━━━━━━━━━━━━━━━
+
+💝 **Thank you for using our bot!**
+⭐ Share with your friends & enjoy!
+"""
     
     return summary
