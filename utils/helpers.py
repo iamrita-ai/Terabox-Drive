@@ -37,17 +37,23 @@ def get_file_type(extension: str) -> str:
 
 def sanitize_filename(filename: str) -> str:
     """Sanitize filename to remove invalid characters"""
+    if not filename:
+        return "downloaded_file"
+    
     # Remove invalid characters
-    invalid_chars = '<>:"/\\|?*'
+    invalid_chars = '<>:"/\\|?*\x00'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
+    
+    # Remove leading/trailing spaces and dots
+    filename = filename.strip('. ')
     
     # Limit filename length
     if len(filename) > 200:
         name, ext = os.path.splitext(filename)
         filename = name[:200-len(ext)] + ext
     
-    return filename.strip()
+    return filename if filename else "downloaded_file"
 
 def extract_gdrive_id(url: str) -> Optional[str]:
     """Extract Google Drive file ID from URL"""
@@ -72,8 +78,8 @@ def is_gdrive_folder(url: str) -> bool:
 def extract_terabox_id(url: str) -> Optional[str]:
     """Extract Terabox file ID from URL"""
     patterns = [
-        r'/s/([a-zA-Z0-9_-]+)',
         r'surl=([a-zA-Z0-9_-]+)',
+        r'/s/([a-zA-Z0-9_-]+)',
     ]
     
     for pattern in patterns:
@@ -97,19 +103,27 @@ def is_terabox_link(url: str) -> bool:
         'terabox.com',
         'teraboxapp.com',
         '1024terabox.com',
+        '1024tera.com',
         'terabox.app',
         'gcloud.life',
         'momerybox.com',
         'teraboxlink.com',
+        'freeterabox.com',
+        'terabox.tech',
+        'teraboxshare.com',
     ]
     return any(pattern in url.lower() for pattern in terabox_patterns)
+
+def is_terabox_folder(url: str) -> bool:
+    """Check if Terabox URL is a folder"""
+    return 'filelist' in url.lower() or 'path=' in url.lower()
 
 def is_direct_link(url: str) -> bool:
     """Check if URL is a direct download link"""
     try:
         parsed = urlparse(url)
         path = parsed.path.lower()
-        direct_extensions = ['.mp4', '.mkv', '.avi', '.pdf', '.zip', '.rar', '.mp3', '.jpg', '.png', '.apk']
+        direct_extensions = ['.mp4', '.mkv', '.avi', '.pdf', '.zip', '.rar', '.mp3', '.jpg', '.png', '.apk', '.mov', '.webm']
         return any(path.endswith(ext) for ext in direct_extensions)
     except:
         return False
@@ -124,7 +138,7 @@ async def read_txt_file(file_path: str) -> List[str]:
     """Read links from txt file"""
     links = []
     try:
-        async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
+        async with aiofiles.open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = await f.read()
             links = extract_links_from_text(content)
     except Exception as e:
@@ -140,19 +154,25 @@ def create_download_dir(user_id: int) -> str:
 async def cleanup_file(file_path: str):
     """Delete file after upload"""
     try:
-        if os.path.exists(file_path):
+        if file_path and os.path.exists(file_path):
             if os.path.isfile(file_path):
                 os.remove(file_path)
+                logger.info(f"Cleaned up file: {file_path}")
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
-            logger.info(f"Cleaned up: {file_path}")
+                logger.info(f"Cleaned up directory: {file_path}")
     except Exception as e:
         logger.error(f"Cleanup error: {e}")
 
 async def cleanup_user_dir(user_id: int):
-    """Clean up user's download directory"""
-    user_dir = os.path.join(Config.DOWNLOAD_DIR, str(user_id))
-    await cleanup_file(user_dir)
+    """Clean up user's download directory completely"""
+    try:
+        user_dir = os.path.join(Config.DOWNLOAD_DIR, str(user_id))
+        if os.path.exists(user_dir):
+            shutil.rmtree(user_dir)
+            logger.info(f"Cleaned up user directory: {user_dir}")
+    except Exception as e:
+        logger.error(f"User dir cleanup error: {e}")
 
 def get_readable_file_size(size_bytes: int) -> str:
     """Convert bytes to readable format"""
@@ -193,19 +213,19 @@ def generate_summary(results: dict) -> str:
 📋 **File Types:**
 """
     
-    for ftype, count in file_types.items():
-        emoji = {
-            'video': '🎬',
-            'audio': '🎵',
-            'image': '🖼️',
-            'pdf': '📄',
-            'apk': '📱',
-            'archive': '🗜️',
-            'document': '📎'
-        }.get(ftype, '📁')
-        summary += f"{emoji} {ftype.title()}: {count}\n"
-    
-    if not file_types:
+    if file_types:
+        for ftype, count in file_types.items():
+            emoji = {
+                'video': '🎬',
+                'audio': '🎵',
+                'image': '🖼️',
+                'pdf': '📄',
+                'apk': '📱',
+                'archive': '🗜️',
+                'document': '📎'
+            }.get(ftype, '📁')
+            summary += f"{emoji} {ftype.title()}: {count}\n"
+    else:
         summary += "None\n"
     
     summary += "━━━━━━━━━━━━━━━━━━━━━━"
