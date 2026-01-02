@@ -34,7 +34,6 @@ class Database:
             self.client.close()
             logger.info("MongoDB connection closed")
     
-    # User Collection Methods
     async def add_user(self, user_id: int, username: str = None, first_name: str = None):
         """Add new user to database"""
         try:
