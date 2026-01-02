@@ -93,50 +93,65 @@ def is_gdrive_folder(url: str) -> bool:
     """Check if Google Drive URL is a folder"""
     return '/folders/' in url or 'folderview' in url
 
-def extract_terabox_id(url: str) -> Optional[str]:
-    """Extract Terabox file ID from URL"""
-    patterns = [
-        r'surl=([a-zA-Z0-9_-]+)',
-        r'/s/([a-zA-Z0-9_-]+)',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-    
-    return None
-
 def is_gdrive_link(url: str) -> bool:
     """Check if URL is a Google Drive link"""
     gdrive_patterns = [
         'drive.google.com',
         'docs.google.com',
-        'drive.usercontent.google.com',  # NEW
-        'storage.googleapis.com',  # NEW
+        'drive.usercontent.google.com',
+        'storage.googleapis.com',
     ]
     return any(pattern in url.lower() for pattern in gdrive_patterns)
 
 def is_terabox_link(url: str) -> bool:
-    """Check if URL is a Terabox link"""
-    terabox_patterns = [
+    """Check if URL is a Terabox link (all domain variations)"""
+    terabox_domains = [
+        # Main Terabox domains
         'terabox.com',
         'teraboxapp.com',
+        'www.terabox.com',
+        
+        # 1024 Tera
         '1024terabox.com',
         '1024tera.com',
+        'www.1024tera.com',
+        
+        # Nephobox
+        'nephobox.com',
+        'www.nephobox.com',
+        'dm.nephobox.com',
+        
+        # Other Terabox mirrors/variants
         'terabox.app',
-        'gcloud.life',
-        'momerybox.com',
-        'teraboxlink.com',
-        'freeterabox.com',
+        'terabox.link',
         'terabox.tech',
         'teraboxshare.com',
+        'teraboxurl.com',
+        'terasharefile.com',
+        'freeterabox.com',
+        
+        # Short domains
+        'tbx.to',
+        
+        # Other variants
+        'gcloud.life',
+        'momerybox.com',
+        'terafileshare.com',
+        'terasharelink.com',
+        'teraboxlink.com',
+        '4funbox.com',
+        'mirrobox.com',
+        'momerybox.com',
+        '1024xp.com',
     ]
-    return any(pattern in url.lower() for pattern in terabox_patterns)
+    
+    url_lower = url.lower()
+    return any(domain in url_lower for domain in terabox_domains)
 
 def is_terabox_folder(url: str) -> bool:
     """Check if Terabox URL is a folder"""
-    return 'filelist' in url.lower() and 'path=' in url.lower()
+    url_lower = url.lower()
+    return 'filelist' in url_lower or ('path=' in url_lower and 'path=%2f' not in url_lower)
 
 def is_direct_link(url: str) -> bool:
     """Check if URL is a direct download link"""
@@ -220,14 +235,13 @@ async def zip_folder(folder_path: str, output_path: str) -> str:
         raise
 
 def generate_summary(results: dict) -> str:
-    """Generate task summary with nice message"""
+    """Generate task summary"""
     total = results.get('total', 0)
     success = results.get('success', 0)
     failed = results.get('failed', 0)
     
     file_types = results.get('file_types', {})
     
-    # Nice completion message
     if success == total and total > 0:
         status_msg = "🎉 **All tasks completed successfully!**"
     elif success > 0:
