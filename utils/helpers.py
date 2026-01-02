@@ -4,14 +4,48 @@ import shutil
 import asyncio
 import aiofiles
 import logging
-from typing import Optional, Tuple, List
-from urllib.parse import urlparse, parse_qs, unquote
+from typing import Optional, List
+from urllib.parse import urlparse, unquote
 from config import Config
 
 logger = logging.getLogger(__name__)
 
+# All supported video/download platforms
+SUPPORTED_PLATFORMS = [
+    # Google
+    'drive.google.com', 'docs.google.com', 'drive.usercontent.google.com', 'storage.googleapis.com',
+    
+    # Terabox family
+    'terabox.com', 'teraboxapp.com', '1024terabox.com', '1024tera.com',
+    'nephobox.com', 'dm.nephobox.com', 'teraboxurl.com', 'terasharefile.com',
+    'freeterabox.com', '4funbox.com', 'mirrobox.com', 'momerybox.com',
+    'terabox.link', 'tbx.to',
+    
+    # Social Media
+    'youtube.com', 'youtu.be', 'facebook.com', 'fb.watch', 'fb.com',
+    'instagram.com', 'instagr.am', 'twitter.com', 'x.com',
+    'tiktok.com', 'reddit.com', 'pinterest.com', 'linkedin.com',
+    'snapchat.com', 'threads.net',
+    
+    # Video Platforms
+    'vimeo.com', 'dailymotion.com', 'twitch.tv', 'bilibili.com',
+    'nicovideo.jp', 'vlive.tv', 'weibo.com', 'douyin.com',
+    'rumble.com', 'bitchute.com', 'odysee.com',
+    'streamable.com', 'streamja.com', 'gfycat.com',
+    
+    # Education
+    'udemy.com', 'coursera.org', 'skillshare.com', 'lynda.com',
+    'pluralsight.com', 'edx.org', 'khanacademy.org', 'masterclass.com',
+    
+    # File Hosting
+    'mediafire.com', 'mega.nz', 'ok.ru', 'vk.com',
+    
+    # Image/GIF
+    'imgur.com', 'giphy.com',
+]
+
 def get_file_extension(filename: str) -> str:
-    """Get file extension from filename"""
+    """Get file extension"""
     if not filename:
         return ''
     if '.' in filename:
@@ -21,32 +55,27 @@ def get_file_extension(filename: str) -> str:
     return ''
 
 def get_file_type(extension: str) -> str:
-    """Determine file type from extension"""
+    """Get file type from extension"""
     if not extension:
         return "document"
     
     ext = extension.lower()
     
-    video_exts = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.mpeg', '.mpg', '.ts', '.vob']
+    video_exts = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.mpeg', '.mpg', '.ts']
+    audio_exts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.opus', '.amr']
+    image_exts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.ico']
+    
     if ext in video_exts:
         return "video"
-    
-    audio_exts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.opus', '.amr']
-    if ext in audio_exts:
+    elif ext in audio_exts:
         return "audio"
-    
-    image_exts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.ico', '.svg']
-    if ext in image_exts:
+    elif ext in image_exts:
         return "image"
-    
-    if ext == '.pdf':
+    elif ext == '.pdf':
         return "pdf"
-    
-    if ext == '.apk':
+    elif ext == '.apk':
         return "apk"
-    
-    archive_exts = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz']
-    if ext in archive_exts:
+    elif ext in ['.zip', '.rar', '.7z', '.tar', '.gz']:
         return "archive"
     
     return "document"
@@ -74,7 +103,7 @@ def sanitize_filename(filename: str) -> str:
     return filename if filename else "downloaded_file"
 
 def extract_gdrive_id(url: str) -> Optional[str]:
-    """Extract Google Drive file ID from URL"""
+    """Extract Google Drive file ID"""
     patterns = [
         r'/file/d/([a-zA-Z0-9_-]+)',
         r'id=([a-zA-Z0-9_-]+)',
@@ -86,90 +115,58 @@ def extract_gdrive_id(url: str) -> Optional[str]:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
-    
     return None
 
-def is_gdrive_folder(url: str) -> bool:
-    """Check if Google Drive URL is a folder"""
-    return '/folders/' in url or 'folderview' in url
-
 def is_gdrive_link(url: str) -> bool:
-    """Check if URL is a Google Drive link"""
-    gdrive_patterns = [
-        'drive.google.com',
-        'docs.google.com',
-        'drive.usercontent.google.com',
-        'storage.googleapis.com',
-    ]
-    return any(pattern in url.lower() for pattern in gdrive_patterns)
+    """Check if Google Drive link"""
+    patterns = ['drive.google.com', 'docs.google.com', 'drive.usercontent.google.com', 'storage.googleapis.com']
+    return any(p in url.lower() for p in patterns)
 
 def is_terabox_link(url: str) -> bool:
-    """Check if URL is a Terabox link (all domain variations)"""
-    terabox_domains = [
-        # Main Terabox domains
-        'terabox.com',
-        'teraboxapp.com',
-        'www.terabox.com',
-        
-        # 1024 Tera
-        '1024terabox.com',
-        '1024tera.com',
-        'www.1024tera.com',
-        
-        # Nephobox
-        'nephobox.com',
-        'www.nephobox.com',
-        'dm.nephobox.com',
-        
-        # Other Terabox mirrors/variants
-        'terabox.app',
-        'terabox.link',
-        'terabox.tech',
-        'teraboxshare.com',
-        'teraboxurl.com',
-        'terasharefile.com',
-        'freeterabox.com',
-        
-        # Short domains
-        'tbx.to',
-        
-        # Other variants
-        'gcloud.life',
-        'momerybox.com',
-        'terafileshare.com',
-        'terasharelink.com',
-        'teraboxlink.com',
-        '4funbox.com',
-        'mirrobox.com',
-        'momerybox.com',
-        '1024xp.com',
+    """Check if Terabox link"""
+    patterns = [
+        'terabox.com', 'teraboxapp.com', '1024terabox.com', '1024tera.com',
+        'nephobox.com', 'teraboxurl.com', 'terasharefile.com', 'freeterabox.com',
+        '4funbox.com', 'mirrobox.com', 'momerybox.com', 'terabox.link', 'tbx.to',
     ]
+    return any(p in url.lower() for p in patterns)
+
+def is_supported_link(url: str) -> bool:
+    """Check if URL is from any supported platform"""
+    url_lower = url.lower()
     
-    url_lower = url.lower()
-    return any(domain in url_lower for domain in terabox_domains)
-
-def is_terabox_folder(url: str) -> bool:
-    """Check if Terabox URL is a folder"""
-    url_lower = url.lower()
-    return 'filelist' in url_lower or ('path=' in url_lower and 'path=%2f' not in url_lower)
-
-def is_direct_link(url: str) -> bool:
-    """Check if URL is a direct download link"""
+    # Check known platforms
+    if any(platform in url_lower for platform in SUPPORTED_PLATFORMS):
+        return True
+    
+    # Check for direct file links
     try:
         parsed = urlparse(url)
         path = parsed.path.lower()
-        direct_extensions = [
+        supported_exts = [
             '.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.3gp',
             '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a',
             '.pdf', '.zip', '.rar', '.7z', '.apk',
-            '.jpg', '.jpeg', '.png', '.gif', '.webp'
+            '.jpg', '.jpeg', '.png', '.gif', '.webp',
+            '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
         ]
-        return any(path.endswith(ext) for ext in direct_extensions)
+        if any(path.endswith(ext) for ext in supported_exts):
+            return True
     except:
-        return False
+        pass
+    
+    # Any http/https link is potentially supported by yt-dlp
+    if url.startswith('http://') or url.startswith('https://'):
+        return True
+    
+    return False
+
+def is_direct_link(url: str) -> bool:
+    """Check if direct download link"""
+    return is_supported_link(url)
 
 def extract_links_from_text(text: str) -> List[str]:
-    """Extract all URLs from text"""
+    """Extract URLs from text"""
     url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
     urls = re.findall(url_pattern, text)
     return [url.strip() for url in urls if url.strip()]
@@ -182,37 +179,34 @@ async def read_txt_file(file_path: str) -> List[str]:
             content = await f.read()
             links = extract_links_from_text(content)
     except Exception as e:
-        logger.error(f"Error reading txt file: {e}")
+        logger.error(f"Error reading txt: {e}")
     return links
 
 def create_download_dir(user_id: int) -> str:
-    """Create download directory for user"""
+    """Create download directory"""
     user_dir = os.path.join(Config.DOWNLOAD_DIR, str(user_id))
     os.makedirs(user_dir, exist_ok=True)
     return user_dir
 
 async def cleanup_file(file_path: str):
-    """Delete file after upload"""
+    """Delete file"""
     try:
         if file_path and os.path.exists(file_path):
             if os.path.isfile(file_path):
                 os.remove(file_path)
-                logger.info(f"🗑️ Cleaned: {file_path}")
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
-                logger.info(f"🗑️ Cleaned dir: {file_path}")
-    except Exception as e:
-        logger.error(f"Cleanup error: {e}")
+    except:
+        pass
 
 async def cleanup_user_dir(user_id: int):
-    """Clean up user's download directory"""
+    """Clean user directory"""
     try:
         user_dir = os.path.join(Config.DOWNLOAD_DIR, str(user_id))
         if os.path.exists(user_dir):
             shutil.rmtree(user_dir)
-            logger.info(f"🗑️ Cleaned user dir: {user_dir}")
-    except Exception as e:
-        logger.error(f"User dir cleanup error: {e}")
+    except:
+        pass
 
 def get_readable_file_size(size_bytes: int) -> str:
     """Convert bytes to readable format"""
@@ -225,21 +219,11 @@ def get_readable_file_size(size_bytes: int) -> str:
     else:
         return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
 
-async def zip_folder(folder_path: str, output_path: str) -> str:
-    """Zip a folder"""
-    try:
-        shutil.make_archive(output_path.replace('.zip', ''), 'zip', folder_path)
-        return output_path
-    except Exception as e:
-        logger.error(f"Zip error: {e}")
-        raise
-
 def generate_summary(results: dict) -> str:
     """Generate task summary"""
     total = results.get('total', 0)
     success = results.get('success', 0)
     failed = results.get('failed', 0)
-    
     file_types = results.get('file_types', {})
     
     if success == total and total > 0:
@@ -265,15 +249,7 @@ def generate_summary(results: dict) -> str:
     if file_types:
         summary += "📋 **File Types:**\n"
         for ftype, count in file_types.items():
-            emoji = {
-                'video': '🎬',
-                'audio': '🎵',
-                'image': '🖼️',
-                'pdf': '📄',
-                'apk': '📱',
-                'archive': '🗜️',
-                'document': '📎'
-            }.get(ftype, '📁')
+            emoji = {'video': '🎬', 'audio': '🎵', 'image': '🖼️', 'pdf': '📄', 'apk': '📱', 'archive': '🗜️'}.get(ftype, '📁')
             summary += f"{emoji} {ftype.title()}: {count}\n"
     
     summary += """
