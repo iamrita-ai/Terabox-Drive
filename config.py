@@ -31,30 +31,33 @@ class Config:
     START_PIC = os.environ.get("START_PIC", "")
     THUMBNAIL_URL = os.environ.get("THUMBNAIL_URL", "")
     
-    # Terabox Cookies (Optional - for better download)
+    # Terabox Cookies (Optional)
     TERABOX_COOKIE = os.environ.get("TERABOX_COOKIE", "")
     
     # Freemium Limits (Configurable)
     FREE_DAILY_LIMIT = 5
-    FREE_MAX_SIZE = 200 * 1024 * 1024  # 200 MB in bytes
+    FREE_MAX_SIZE = 200 * 1024 * 1024  # 200 MB
     FREE_MAX_SIZE_MB = 200
     
     # Premium Limits
-    PREMIUM_MAX_SIZE = 4 * 1024 * 1024 * 1024  # 4 GB in bytes
+    PREMIUM_MAX_SIZE = 4 * 1024 * 1024 * 1024  # 4 GB
     PREMIUM_MAX_SIZE_MB = 4096
     
     # Download/Upload Settings
     PROGRESS_UPDATE_INTERVAL = 8  # seconds
-    CHUNK_SIZE = 1024 * 1024  # 1 MB chunks
+    CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB chunks
+    
+    # Message Delay (to avoid flood) - Optional
+    MESSAGE_DELAY = int(os.environ.get("MESSAGE_DELAY", 5))  # 5 seconds default
     
     # Temp Directory
     DOWNLOAD_DIR = "./downloads"
     
-    # Flask Port for Render
+    # Flask Port
     PORT = int(os.environ.get("PORT", 8080))
     
     # Supported Extensions
-    VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp']
-    AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a']
+    VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.mpeg', '.mpg', '.ts']
+    AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.opus']
     IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff']
     DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.ppt', '.pptx', '.apk', '.zip', '.rar']
