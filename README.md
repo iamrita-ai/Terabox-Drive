@@ -222,71 +222,7 @@ TelegramDownloaderBot/
     └── helpers.py          # Helper functions
 
 
-Troubleshooting
-❌ "No module named 'xxx'"
-Bash
-
-pip install -r requirements.txt
-❌ "MongoDB connection failed"
-Check your MONGO_URI is correct
-Add 0.0.0.0/0 to MongoDB IP whitelist
-❌ "Bot not responding to links"
-Check if handlers are loaded in logs
-Verify handlers/__init__.py is empty
-❌ "Video not playable"
-Terabox videos may have encoding issues
-Try with different links
-
-📊 Progress Bar Preview
-
-Downloading
-Day 2 HTML.zip
-to my server
-
-[●●●●○○○○○○○○○○○○○○○○]
-
-◌ Progress😉: 〘 20.00% 〙
-Done: 〘70.12 MB of 350.61 MB〙
-◌ Speed🚀: 〘 5.34 MB/s 〙
-◌ Time Left⏳: 〘 52s 〙
-
-🤝 Contributing
-Fork the repository
-Create a new branch
-Make your changes
-Submit a pull request
-📜 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-<div align="center">
-👨‍💻 Credits & Developer
-<br><a href="https://t.me/technicalserena"> <img src="https://img.shields.io/badge/Telegram-@technicalserena-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"> </a>
+yourusername/TelegramDownloaderBot?style=social" alt="Forks">
 <br><br>
 
-<a href="https://instagram.com/prince572002"> <img src="https://img.shields.io/badge/Instagram-@prince572002-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"> </a>
-<br><br>
 
-💖 Made with Love by Prince
-If you like this project, please give it a ⭐!
-
-<br><img src="https://img.shields.io/github/stars/yourusername/TelegramDownloaderBot?style=social" alt="Stars"> <img src="https://img.shields.io/github/forks/yourusername/TelegramDownloaderBot?style=social" alt="Forks">
-<br><br>
-
-© 2024 - All Rights Reserved
-
-</div> ```
-
-📦 Push & Redeploy:
-Bash
-
-git add .
-git commit -m "Fix Terabox folder + Summary + README"
-git push origin main
-✅ Summary of Changes:
-Issue	Fix
-Terabox folder creating corrupted ZIP	Now downloads each file separately
-Videos not playable	Individual file upload (not zipped)
-Summary sent during processing	Now sent at the very END
-Channel button in summary	REMOVED - only Owner Contact remains
-README.md	Complete professional README with credits
-Redeploy karo - sab theek ho jayega! 🚀
