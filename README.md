@@ -1,134 +1,292 @@
+<div align="center">
+
 # 📥 Telegram Multi Downloader Bot
 
-A powerful Telegram bot to download files from **Google Drive** and **Terabox** with queue management, thumbnail generation, and premium features.
+<img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+<img src="https://img.shields.io/badge/Pyrogram-2.0-green?style=for-the-badge&logo=telegram&logoColor=white" alt="Pyrogram">
+<img src="https://img.shields.io/badge/MongoDB-4.6-brightgreen?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
+<img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
+
+<br><br>
+
+**🚀 A powerful Telegram bot to download files from Google Drive & Terabox with queue management, thumbnail generation, and premium features.**
+
+[Features](#-features) • [Deploy](#-deploy-on-render) • [Commands](#-commands) • [Config](#-configuration) • [Credits](#-credits)
+
+<br>
+
+---
+
+</div>
 
 ## ✨ Features
 
-- 📥 Download from Google Drive & Terabox direct links
-- 📁 Auto-zip folder contents
-- 🖼️ Thumbnail generation for video/jpg/pdf/apk/mp3
-- 📊 Queue management with progress tracking
-- 📝 Support .txt file with multiple links
-- 👥 Works in Groups & Topics
-- 💎 Premium & Freemium system
-- 📢 Broadcast system
-- 📋 Detailed logging
+<table>
+<tr>
+<td>
+
+### 📥 Download Sources
+- ✅ Google Drive (Direct & Shared Links)
+- ✅ Google Storage Links
+- ✅ Terabox / 1024Tera
+- ✅ Terabox Folders (Individual Files)
+- ✅ Direct Download Links
+
+</td>
+<td>
+
+### 🎬 Media Support
+- ✅ Videos (MP4, MKV, AVI, etc.)
+- ✅ Audio (MP3, WAV, FLAC, etc.)
+- ✅ Images (JPG, PNG, GIF, etc.)
+- ✅ Documents (PDF, ZIP, APK, etc.)
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 👑 Premium System
+- ✅ Daily Limits for Free Users
+- ✅ Unlimited for Premium Users
+- ✅ Configurable File Size Limits
+- ✅ Custom Settings for Premium
+
+</td>
+<td>
+
+### 🛠️ Advanced Features
+- ✅ Auto Thumbnail Generation
+- ✅ Queue Management
+- ✅ Progress Bar with ETA
+- ✅ Flood Protection (Message Delay)
+
+</td>
+</tr>
+</table>
+
+---
 
 ## 🚀 Deploy on Render
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com)
+### 📋 Prerequisites
 
-📷 Visual Guide - Render Dashboard:
-text
+| Requirement | Where to Get |
+|-------------|--------------|
+| Telegram API ID & Hash | [my.telegram.org](https://my.telegram.org) |
+| Bot Token | [@BotFather](https://t.me/BotFather) |
+| MongoDB URI | [MongoDB Atlas](https://www.mongodb.com/atlas) (Free) |
 
-┌─────────────────────────────────────────────────────────────┐
-│                    Create a new Web Service                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Name:        [telegram-downloader-bot          ]           │
-│                                                              │
-│  Region:      [Singapore (Southeast Asia)    ▼]             │
-│                                                              │
-│  Branch:      [main                          ▼]             │
-│                                                              │
-│  Root Directory: [                            ]  (empty)    │
-│                                                              │
-│  Runtime:     [Python 3                      ▼]             │
-│                                                              │
-│  Build Command:                                              │
-│  ┌─────────────────────────────────────────────┐            │
-│  │ pip install -r requirements.txt             │            │
-│  └─────────────────────────────────────────────┘            │
-│                                                              │
-│  Start Command:                                              │
-│  ┌─────────────────────────────────────────────┐            │
-│  │ python main.py                              │            │
-│  └─────────────────────────────────────────────┘            │
-│                                                              │
-│  Instance Type:                                              │
-│  ○ Free    ● Starter ($7/mo)    ○ Standard                  │
-│                                                              │
-│  [Advanced ▼]                                                │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+---
 
-Environment Variables Setup (Screenshot Style)
-text
+### 📝 Step 1: Fork Repository
 
-┌─────────────────────────────────────────────────────────────┐
-│                    Environment Variables                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Key              Value                                      │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ API_ID       │ │ 12345678                           │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ API_HASH     │ │ a1b2c3d4e5f6g7h8i9j0               │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ BOT_TOKEN    │ │ 123456:ABC-DEF1234ghIkl-zyx57W2v   │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ MONGO_URI    │ │ mongodb+srv://user:pass@cluster... │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ START_PIC    │ │ https://i.imgur.com/example.jpg    │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ THUMBNAIL_URL│ │ https://i.imgur.com/thumb.jpg      │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  ┌──────────────┐ ┌────────────────────────────────────┐    │
-│  │ PORT         │ │ 8080                               │    │
-│  └──────────────┘ └────────────────────────────────────┘    │
-│                                                              │
-│  [+ Add Environment Variable]                                │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+1. Click the **Fork** button on this repository
+2. Wait for the fork to complete
 
-### Environment Variables
+---
 
-| Variable | Description |
-|----------|-------------|
-| `API_ID` | Telegram API ID from my.telegram.org |
-| `API_HASH` | Telegram API Hash from my.telegram.org |
-| `BOT_TOKEN` | Bot token from @BotFather |
-| `MONGO_URI` | MongoDB connection string |
-| `START_PIC` | Start picture URL |
-| `THUMBNAIL_URL` | Default thumbnail URL for PDFs |
+### 📝 Step 2: Create Render Account
+
+1. Go to [render.com](https://render.com)
+2. Sign up with your **GitHub account**
+
+---
+
+### 📝 Step 3: Create New Web Service
+
+1. Click **"New +"** → **"Web Service"**
+2. Connect your forked repository
+3. Fill the following details:
+
+| Field | Value |
+|-------|-------|
+| **Name** | `telegram-downloader-bot` |
+| **Region** | `Singapore (Southeast Asia)` |
+| **Branch** | `main` |
+| **Root Directory** | *(Leave empty)* |
+| **Runtime** | `Python 3` |
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `python main.py` |
+| **Instance Type** | `Free` |
+
+---
+
+### 📝 Step 4: Add Environment Variables
+
+Click **"Advanced"** → **"Add Environment Variable"**
+
+| Key | Value | Required |
+|-----|-------|----------|
+| `PYTHON_VERSION` | `3.11.7` | ✅ |
+| `API_ID` | Your Telegram API ID | ✅ |
+| `API_HASH` | Your Telegram API Hash | ✅ |
+| `BOT_TOKEN` | Bot token from @BotFather | ✅ |
+| `MONGO_URI` | MongoDB connection string | ✅ |
+| `START_PIC` | Start image URL | ❌ |
+| `THUMBNAIL_URL` | Default thumbnail URL | ❌ |
+| `TERABOX_COOKIE` | Terabox cookies (for better downloads) | ❌ |
+| `MESSAGE_DELAY` | Delay between messages (default: 5) | ❌ |
+| `PORT` | `8080` | ✅ |
+
+---
+
+### 📝 Step 5: Deploy!
+
+1. Click **"Create Web Service"**
+2. Wait for deployment (5-10 minutes)
+3. Check logs for any errors
+4. Your bot should be running! 🎉
+
+---
 
 ## 📋 Commands
+
+### 👤 User Commands
 
 | Command | Description |
 |---------|-------------|
 | `/start` | Start the bot |
 | `/help` | Show help message |
-| `/setting` | User settings (Premium only) |
 | `/cancel` | Cancel ongoing task |
-| `/broadcast` | Broadcast message (Owner only) |
-| `/premium` | Add premium user (Owner only) |
-| `/removepremium` | Remove premium (Owner only) |
 
-## 💎 Limits
+### 👑 Premium Commands (Owner Only)
 
-| Feature | Freemium | Premium |
-|---------|----------|---------|
-| Daily Tasks | 5 | Unlimited |
-| Max File Size | 200 MB | 4 GB |
-| Speed | Low | High |
-| Settings | ❌ | ✅ |
+| Command | Description |
+|---------|-------------|
+| `/premium <user_id> <days>` | Add premium to user |
+| `/removepremium <user_id>` | Remove premium from user |
+| `/broadcast` | Broadcast message to all users |
 
-## 📝 License
+### ⚙️ Settings Commands (Premium Only)
 
-MIT License - Feel free to modify and use!
+| Command | Description |
+|---------|-------------|
+| `/setting` | Open settings menu |
 
-## 👨‍💻 Developer
+---
 
-- [@technicalserena](https://t.me/technicalserena)
-- [@Xioqui_xin](https://t.me/Xioqui_xin)
+## ⚙️ Configuration
+
+### 📁 config.py
+
+```python
+# Freemium Limits
+FREE_DAILY_LIMIT = 5          # Tasks per day
+FREE_MAX_SIZE = 200 * 1024 * 1024  # 200 MB
+
+# Premium Limits
+PREMIUM_MAX_SIZE = 4 * 1024 * 1024 * 1024  # 4 GB
+
+# Other Settings
+MESSAGE_DELAY = 5             # Seconds between messages
+PROGRESS_UPDATE_INTERVAL = 8  # Progress update interval
+
+Premium vs Freemium
+Feature	🆓 Freemium	💎 Premium
+Daily Tasks	5	♾️ Unlimited
+Max File Size	200 MB	4 GB
+Download Speed	Normal	High Priority
+Custom Settings	❌	✅
+Custom Thumbnail
+
+🗂️ Project Structure
+
+TelegramDownloaderBot/
+├── 📄 main.py              # Main entry point
+├── 📄 config.py            # Configuration
+├── 📄 requirements.txt     # Dependencies
+├── 📄 runtime.txt          # Python version
+├── 📄 render.yaml          # Render config
+├── 📁 database/
+│   ├── __init__.py
+│   ├── mongodb.py          # Database connection
+│   └── users.py            # User operations
+├── 📁 handlers/
+│   ├── __init__.py
+│   ├── start.py            # Start command
+│   ├── help.py             # Help command
+│   ├── settings.py         # Settings handler
+│   ├── broadcast.py        # Broadcast handler
+│   ├── premium.py          # Premium handler
+│   ├── cancel.py           # Cancel handler
+│   ├── link_handler.py     # Link processing
+│   └── file_handler.py     # File processing
+└── 📁 utils/
+    ├── __init__.py
+    ├── progress.py         # Progress bar
+    ├── downloader.py       # Download manager
+    ├── uploader.py         # Upload manager
+    ├── thumbnail.py        # Thumbnail generator
+    ├── queue_manager.py    # Queue manager
+    └── helpers.py          # Helper functions
+
+
+Troubleshooting
+❌ "No module named 'xxx'"
+Bash
+
+pip install -r requirements.txt
+❌ "MongoDB connection failed"
+Check your MONGO_URI is correct
+Add 0.0.0.0/0 to MongoDB IP whitelist
+❌ "Bot not responding to links"
+Check if handlers are loaded in logs
+Verify handlers/__init__.py is empty
+❌ "Video not playable"
+Terabox videos may have encoding issues
+Try with different links
+
+📊 Progress Bar Preview
+
+Downloading
+Day 2 HTML.zip
+to my server
+
+[●●●●○○○○○○○○○○○○○○○○]
+
+◌ Progress😉: 〘 20.00% 〙
+Done: 〘70.12 MB of 350.61 MB〙
+◌ Speed🚀: 〘 5.34 MB/s 〙
+◌ Time Left⏳: 〘 52s 〙
+
+🤝 Contributing
+Fork the repository
+Create a new branch
+Make your changes
+Submit a pull request
+📜 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+<div align="center">
+👨‍💻 Credits & Developer
+<br><a href="https://t.me/technicalserena"> <img src="https://img.shields.io/badge/Telegram-@technicalserena-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"> </a>
+<br><br>
+
+<a href="https://instagram.com/prince572002"> <img src="https://img.shields.io/badge/Instagram-@prince572002-E4405F?style=for-the-badge&logo=instagram&logoColor=white" alt="Instagram"> </a>
+<br><br>
+
+💖 Made with Love by Prince
+If you like this project, please give it a ⭐!
+
+<br><img src="https://img.shields.io/github/stars/yourusername/TelegramDownloaderBot?style=social" alt="Stars"> <img src="https://img.shields.io/github/forks/yourusername/TelegramDownloaderBot?style=social" alt="Forks">
+<br><br>
+
+© 2024 - All Rights Reserved
+
+</div> ```
+
+📦 Push & Redeploy:
+Bash
+
+git add .
+git commit -m "Fix Terabox folder + Summary + README"
+git push origin main
+✅ Summary of Changes:
+Issue	Fix
+Terabox folder creating corrupted ZIP	Now downloads each file separately
+Videos not playable	Individual file upload (not zipped)
+Summary sent during processing	Now sent at the very END
+Channel button in summary	REMOVED - only Owner Contact remains
+README.md	Complete professional README with credits
+Redeploy karo - sab theek ho jayega! 🚀
